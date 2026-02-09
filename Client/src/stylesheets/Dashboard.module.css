@@ -1,0 +1,53 @@
+.hero {
+  background: linear-gradient(to right, #2563eb, #4338ca);
+  border-radius: 1rem;
+  padding: 2rem;
+  color: white;
+  margin-bottom: 2.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+/* We removed the 2-column grid. Now it's just a single column flow. */
+.workflowSection {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 1rem;
+  border: 1px solid #e5e7eb;
+}
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  color: #1f2937;
+}
+
+.workflowContainer { position: relative; }
+
+.workflowLine {
+  position: absolute;
+  left: 2rem;
+  top: 2rem;
+  bottom: 2rem;
+  width: 2px;
+  background-color: #e5e7eb;
+  z-index: 0;
+}
+
+.arrowContainer {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0;
+}
+
+.arrowIcon {
+  color: #d1d5db;
+  background: white;
+  border-radius: 50%;
+  position: relative;
+  z-index: 10;
+}
