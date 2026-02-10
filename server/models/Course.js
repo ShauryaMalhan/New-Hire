@@ -29,7 +29,7 @@ const CourseSchema = new mongoose.Schema({
   },
   color: { 
     type: String, 
-    default: 'bg-gray-100 text-gray-700' // Default styling if none provided
+    default: 'bg-gray-100 text-gray-700'
   }
 });
 
