@@ -1,40 +1,77 @@
-import React, { useState } from 'react';
-import { Settings, ArrowDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings, ArrowDown, Loader } from 'lucide-react';
 import TaskItem from '../components/widgets/TaskItem';
-import { INITIAL_TASKS } from '../data/mockData'; // Removed COURSES
+// UPDATE: Importing from specific API files
+import { getTasks, updateTaskStatus } from '../services/taskApi';
+import { getUser } from '../services/userApi';
 import styles from '../stylesheets/Dashboard.module.css';
 
 const Dashboard = () => {
-  const [tasks, setTasks] = useState(INITIAL_TASKS);
+  const [tasks, setTasks] = useState([]);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const toggleTask = (id) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [userData, tasksData] = await Promise.all([
+          getUser(),
+          getTasks()
+        ]);
+        
+        setUser(userData);
+        setTasks(tasksData);
+      } catch (error) {
+        console.error("Error connecting to backend:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const toggleTask = async (id) => {
     const taskIndex = tasks.findIndex(t => t.id === id);
     if (taskIndex === -1) return;
 
     if (taskIndex > 0 && tasks[taskIndex - 1].status !== 'completed') return;
 
     const newStatus = tasks[taskIndex].status === 'completed' ? 'pending' : 'completed';
-    let newTasks = [...tasks];
+    
+    // Optimistic UI Update
+    const newTasks = [...tasks];
     newTasks[taskIndex] = { ...newTasks[taskIndex], status: newStatus };
-
-    if (newStatus === 'pending') {
-      for (let i = taskIndex + 1; i < newTasks.length; i++) {
-        newTasks[i] = { ...newTasks[i], status: 'pending' };
-      }
-    }
     setTasks(newTasks);
+
+    // Backend Update
+    try {
+      await updateTaskStatus(id, newStatus);
+    } catch (error) {
+      console.error("Failed to update task", error);
+    }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader className="animate-spin text-blue-600" size={48} />
+      </div>
+    );
+  }
+
   const completedCount = tasks.filter(t => t.status === 'completed').length;
-  const progressPercentage = Math.round((completedCount / tasks.length) * 100);
+  const progressPercentage = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
+  const firstName = user ? user.fullName.split(' ')[0] : 'New Hire';
 
   return (
     <div className="max-w-4xl mx-auto">
       {/* Hero Section */}
       <section className={styles.hero}>
         <div className="relative z-10">
-          <h1 className="text-3xl font-bold mb-2">Welcome aboard, Alex! 🚀</h1>
+          <h1 className="text-3xl font-bold mb-2">Welcome aboard, {firstName}! 🚀</h1>
           <p className="text-blue-100 mb-6 max-w-xl">
+            {user?.role ? `You are joining as a ${user.role}.` : ''} 
             Day 1 can be overwhelming, but we've organized everything you need right here.
           </p>
           
@@ -50,39 +87,43 @@ const Dashboard = () => {
         </div>
       </section>
 
-      {/* Workflow Section (Now Full Width) */}
+      {/* Workflow Section */}
       <div className={styles.workflowSection}>
         <h3 className={styles.sectionTitle}>
           <Settings className="text-blue-600" size={24} /> Priority Setup Workflow
         </h3>
         
-        <div className={styles.workflowContainer}>
-          <div className={styles.workflowLine}></div>
-          <div className="space-y-1 relative z-10">
-            {tasks.map((task, index) => {
-              const isCompleted = task.status === 'completed';
-              const isLocked = index > 0 && tasks[index - 1].status !== 'completed';
-              const isActive = !isCompleted && !isLocked;
+        {tasks.length === 0 ? (
+          <p className="text-gray-500 italic">No tasks assigned yet.</p>
+        ) : (
+          <div className={styles.workflowContainer}>
+            <div className={styles.workflowLine}></div>
+            <div className="space-y-1 relative z-10">
+              {tasks.map((task, index) => {
+                const isCompleted = task.status === 'completed';
+                const isLocked = index > 0 && tasks[index - 1].status !== 'completed';
+                const isActive = !isCompleted && !isLocked;
 
-              return (
-                <React.Fragment key={task.id}>
-                  <TaskItem 
-                    task={task} 
-                    isLocked={isLocked}
-                    isActive={isActive}
-                    isCompleted={isCompleted}
-                    onToggle={toggleTask} 
-                  />
-                  {index < tasks.length - 1 && (
-                    <div className={styles.arrowContainer}>
-                      <ArrowDown size={16} className={`${styles.arrowIcon} ${isActive ? 'text-blue-500 animate-bounce' : ''}`} />
-                    </div>
-                  )}
-                </React.Fragment>
-              );
-            })}
+                return (
+                  <React.Fragment key={task.id}>
+                    <TaskItem 
+                      task={task} 
+                      isLocked={isLocked}
+                      isActive={isActive}
+                      isCompleted={isCompleted}
+                      onToggle={toggleTask} 
+                    />
+                    {index < tasks.length - 1 && (
+                      <div className={styles.arrowContainer}>
+                        <ArrowDown size={16} className={`${styles.arrowIcon} ${isActive ? 'text-blue-500 animate-bounce' : ''}`} />
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
