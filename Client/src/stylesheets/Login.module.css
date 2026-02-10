@@ -1,0 +1,241 @@
+/* Variables for consistency */
+:root {
+  --cisco-blue: #0070d2;
+  --cisco-dark-blue: #0d274d;
+  --cisco-light-gray: #f4f6f8;
+  --cisco-text-main: #1b1b1b;
+  --cisco-text-sub: #585858;
+  --cisco-border: #d6d6d6;
+  --cisco-focus-ring: rgba(0, 112, 210, 0.3);
+  --white: #ffffff;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  /* Professional corporate gradient */
+  background: linear-gradient(135deg, #f2f6fa 0%, #e3e9ef 100%);
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.card {
+  background-color: var(--white);
+  padding: 48px;
+  border-radius: 12px;
+  /* Subtle, high-quality shadow */
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+  width: 100%;
+  max-width: 440px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Section */
+.header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.logoBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cisco-blue);
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: rgba(0, 112, 210, 0.1);
+  border-radius: 50%;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--cisco-dark-blue);
+  margin: 0 0 8px 0;
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 15px;
+  color: var(--cisco-text-sub);
+  margin: 0;
+}
+
+/* Separator Line */
+.separator {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 24px;
+  color: #999;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.separator::before,
+.separator::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.separator::before {
+  margin-right: 12px;
+}
+
+.separator::after {
+  margin-left: 12px;
+}
+
+/* Error Alert */
+.errorAlert {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #fecaca;
+  font-size: 14px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+.errorIcon {
+  flex-shrink: 0;
+}
+
+/* Form Groups */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cisco-text-main);
+  margin-bottom: 8px;
+}
+
+.inputWrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.inputIcon {
+  position: absolute;
+  left: 14px;
+  color: #888;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px 12px 48px; /* Extra padding left for icon */
+  font-size: 15px;
+  color: var(--cisco-text-main);
+  background-color: var(--white);
+  border: 1px solid var(--cisco-border);
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: var(--cisco-blue);
+  box-shadow: 0 0 0 3px var(--cisco-focus-ring);
+}
+
+.input::placeholder {
+  color: #a0a0a0;
+}
+
+/* Button */
+.button {
+  margin-top: 8px;
+  width: 100%;
+  padding: 12px;
+  background-color: var(--cisco-dark-blue);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s ease, transform 0.1s;
+}
+
+.button:hover:not(:disabled) {
+  background-color: var(--cisco-blue);
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.99);
+}
+
+.button:disabled {
+  background-color: #a0a0a0;
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+}
+
+/* Footer */
+.footer {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f0f0f0;
+  text-align: center;
+  font-size: 12px;
+  color: #888;
+  line-height: 1.5;
+}
+
+/* Animations & Media Queries */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+  .card {
+    padding: 32px 24px;
+    box-shadow: none;
+    border: none;
+    background: transparent;
+  }
+  
+  .container {
+    background: var(--white);
+    align-items: flex-start;
+    padding-top: 40px;
+  }
+}

@@ -1,12 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NavLink, Link } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Settings, User, LogOut, ChevronDown } from 'lucide-react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, BookOpen, Settings, User, LogOut, ChevronDown, Hexagon } from 'lucide-react';
+import useAuth from '../hooks/useAuth';
 import styles from '../stylesheets/Header.module.css';
 
-const Header = ({ user }) => {
+const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
+  
+  // Get user data and logout function from Context
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
 
+  // Close dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -17,55 +23,68 @@ const Header = ({ user }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   const fullName = user ? user.fullName : 'Loading...';
   const role = user ? user.role : '';
-  const initials = user ? user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() : '...';
+  const initials = user?.fullName 
+    ? user.fullName.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() 
+    : 'NB';
 
   return (
     <header className={styles.header}>
       
-      {/* 1. Logo (Left) */}
+      {/* 1. Logo */}
       <Link to="/" className={styles.logoContainer}>
-        <div className={styles.logoIcon}>N</div>
-        <span>NexBoard</span>
+        <Hexagon className={styles.logoIcon} size={28} strokeWidth={2.5} />
+        <span className={styles.logoText}>NexBoard</span>
       </Link>
 
-      {/* 2. Navigation (Center) */}
+      {/* 2. Navigation */}
       <nav className={styles.nav}>
         <NavLink to="/" className={({isActive}) => `${styles.navLink} ${isActive ? styles.active : ''}`}>
           <LayoutDashboard size={18} />
-          Dashboard
+          <span>Dashboard</span>
         </NavLink>
 
         <NavLink to="/learning" className={({isActive}) => `${styles.navLink} ${isActive ? styles.active : ''}`}>
           <BookOpen size={18} />
-          Required Trainings
+          <span>Required Trainings</span>
         </NavLink>
 
         <NavLink to="/setup" className={({isActive}) => `${styles.navLink} ${isActive ? styles.active : ''}`}>
           <Settings size={18} />
-          Setup Guides
+          <span>Setup Guides</span>
         </NavLink>
       </nav>
 
-      {/* 3. User Profile (Right) */}
+      {/* 3. User Profile & Dropdown */}
       <div className={styles.userContainer} ref={dropdownRef}>
+        {/* Profile Trigger */}
         <div className={styles.userProfile} onClick={() => setIsOpen(!isOpen)}>
           <div className={styles.userInfo}>
             <span className={styles.userName}>{fullName}</span>
             <span className={styles.userRole}>{role}</span>
           </div>
           <div className={styles.avatar}>{initials}</div>
-          <ChevronDown size={16} className="text-gray-400" />
+          <ChevronDown size={16} className={styles.chevron} />
         </div>
 
-        <div className={`${styles.dropdown} ${isOpen ? styles.open : ''}`}>
+        {/* Dropdown Menu - Controlled by CSS class 'show' */}
+        <div className={`${styles.dropdown} ${isOpen ? styles.show : ''}`}>
           <Link to="/profile" className={styles.dropdownItem} onClick={() => setIsOpen(false)}>
-            <User size={16} /> View Profile
+            <User size={16} /> 
+            <span>View Profile</span>
           </Link>
-          <div className="h-px bg-gray-100"></div>
-          <button className={`${styles.dropdownItem} ${styles.logout}`} onClick={() => console.log('Logout')}>
-            <LogOut size={16} /> Sign out
+          
+          <div className={styles.separator}></div>
+          
+          <button className={`${styles.dropdownItem} ${styles.logout}`} onClick={handleLogout}>
+            <LogOut size={16} /> 
+            <span>Sign out</span>
           </button>
         </div>
       </div>

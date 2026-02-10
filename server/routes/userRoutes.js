@@ -12,40 +12,4 @@ router.get('/', async (req, res) => {
   }
 });
 
-router.post('/', async (req, res) => {
-  const { 
-    ciscoId, 
-    fullName, 
-    email, 
-    mobile,
-    departmentNumber,
-    role, 
-    manager, 
-    team 
-  } = req.body;
-
-  try {
-    const userExists = await User.findOne({ ciscoId });
-
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
-    }
-
-    const user = await User.create({
-      ciscoId,
-      fullName,
-      email,
-      mobile,
-      departmentNumber,
-      role,
-      manager,
-      team
-    });
-
-    res.status(201).json(user);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-});
-
 export default router;

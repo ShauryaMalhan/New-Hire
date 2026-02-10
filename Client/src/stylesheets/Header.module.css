@@ -1,81 +1,179 @@
+/* Header Container */
 .header {
-  height: 4rem;
-  background-color: white;
-  border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
-  justify-content: space-between; /* Logo Left, Nav Center, Profile Right */
-  padding: 0 2rem;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e0e0e0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
   position: sticky;
   top: 0;
   z-index: 50;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
-/* LEFT: Logo */
+/* Logo Section */
 .logoContainer {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: #111827;
+  gap: 12px;
   text-decoration: none;
+  color: #0d274d; /* Cisco Dark Blue */
 }
 
 .logoIcon {
-  width: 2rem;
-  height: 2rem;
-  background-color: #2563eb;
-  color: white;
-  border-radius: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.25rem;
+  color: #0070d2; /* Cisco Blue */
 }
 
-/* CENTER: Navigation */
+.logoText {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+/* Navigation */
 .nav {
   display: flex;
-  gap: 2rem;
+  gap: 8px;
 }
 
 .navLink {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #6b7280; /* gray-500 */
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 6px;
   text-decoration: none;
-  padding: 0.5rem 0;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
+  font-size: 14px;
+  font-weight: 500;
+  color: #585858;
+  transition: all 0.2s ease;
 }
 
 .navLink:hover {
-  color: #111827; /* gray-900 */
+  background-color: #f4f6f8;
+  color: #0070d2;
 }
 
-.active {
-  color: #2563eb; /* blue-600 */
-  border-bottom-color: #2563eb;
+.navLink.active {
+  background-color: #e5f1fa; /* Light Blue BG */
+  color: #0070d2;
+  font-weight: 600;
 }
 
-/* RIGHT: User Profile (Keep existing styles) */
-.userContainer { position: relative; cursor: pointer; }
-.userProfile { display: flex; align-items: center; gap: 0.75rem; padding: 0.25rem 0.5rem; border-radius: 0.5rem; transition: background-color 0.2s; }
-.userProfile:hover { background-color: #f3f4f6; }
-.avatar { width: 2.25rem; height: 2.25rem; background-color: #dbeafe; color: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.875rem; }
-.userInfo { display: flex; flex-direction: column; align-items: flex-end; }
-.userName { font-size: 0.875rem; font-weight: 600; color: #111827; }
-.userRole { font-size: 0.75rem; color: #6b7280; }
+/* User Profile Section */
+.userContainer {
+  position: relative; /* Crucial for Dropdown positioning */
+}
 
-/* Dropdown (Keep existing) */
-.dropdown { position: absolute; top: 120%; right: 0; width: 12rem; background: white; border: 1px solid #e5e7eb; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); display: none; flex-direction: column; overflow: hidden; }
-.dropdown.open { display: flex; }
-.dropdownItem { display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; font-size: 0.875rem; color: #374151; text-decoration: none; transition: background-color 0.2s; }
-.dropdownItem:hover { background-color: #f3f4f6; }
-.logout { color: #ef4444; width: 100%; text-align: left; border: none; background: none; cursor: pointer; }
-.logout:hover { background-color: #fee2e2; }
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+}
+
+.userProfile:hover {
+  background-color: #f4f6f8;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  text-align: right;
+}
+
+.userName {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1b1b1b;
+}
+
+.userRole {
+  font-size: 11px;
+  color: #666;
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  background-color: #0070d2;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.chevron {
+  color: #888;
+}
+
+/* Dropdown Menu */
+.dropdown {
+  position: absolute;
+  top: 120%; /* Pushes it slightly below the header */
+  right: 0;
+  width: 200px;
+  background-color: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding: 8px 0;
+  z-index: 100;
+  
+  /* Toggle Logic */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s ease;
+}
+
+/* The Class that makes it appear */
+.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  width: 100%;
+  text-decoration: none;
+  font-size: 14px;
+  color: #333;
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  text-align: left;
+}
+
+.dropdownItem:hover {
+  background-color: #f4f6f8;
+  color: #0070d2;
+}
+
+.logout {
+  color: #d32f2f; /* Red for logout */
+}
+
+.logout:hover {
+  background-color: #fef2f2;
+  color: #b91c1c;
+}
+
+.separator {
+  height: 1px;
+  background-color: #e0e0e0;
+  margin: 6px 0;
+}

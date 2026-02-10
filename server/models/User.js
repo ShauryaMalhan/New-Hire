@@ -15,6 +15,11 @@ const UserSchema = new mongoose.Schema({
     required: true, 
     unique: true 
   },
+  password: { 
+    type: String, 
+    required: true,
+    select: false
+  },
   mobile: { 
     type: String, 
     required: true
@@ -35,8 +40,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: 'Engineering'
   },
-}, {
-  timestamps: true
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
 });
 
 const User = mongoose.model('User', UserSchema);
