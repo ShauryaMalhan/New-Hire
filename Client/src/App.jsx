@@ -1,21 +1,18 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom'; // Remove BrowserRouter import
 import MainLayout from './layouts/MainLayout';
 import Dashboard from './pages/Dashboard';
 import RequiredTrainings from './pages/RequiredTrainings';
 import UserProfile from './pages/UserProfile';
-import Login from './pages/Login'; // <--- Import Login
+import Login from './pages/Login';
 import AuthProvider from './providers/AuthProvider';
-import ProtectedRoute from './components/ProtectedRoute'; // <--- Import Guard
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* Public Route */}
         <Route path="/login" element={<Login />} />
-
-        {/* Protected Routes (Everything inside MainLayout) */}
         <Route path="/" element={
           <ProtectedRoute>
             <MainLayout />
