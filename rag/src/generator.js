@@ -2,7 +2,7 @@ import { Ollama } from "@langchain/ollama";
 import { CONFIG } from './config.js';
 
 const llm = new Ollama({
-    baseUrl: "http://localhost:11434",
+    baseUrl: CONFIG.OLLAMA_BASE_URL,
     model: CONFIG.OLLAMA_MODEL,
 });
 

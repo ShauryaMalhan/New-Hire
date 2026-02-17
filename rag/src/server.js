@@ -76,6 +76,6 @@ app.post('/admin/ingest', upload.single('file'), async (req, res) => {
     }
 });
 
-app.listen(3000, () => {
-    console.log('✅ Server listening on http://localhost:3000');
+app.listen(CONFIG.PORT, () => {
+    console.log(`✅ Server listening on http://localhost:${CONFIG.PORT}`);
 });

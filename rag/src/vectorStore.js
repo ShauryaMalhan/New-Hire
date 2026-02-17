@@ -4,44 +4,55 @@ import { CONFIG } from './config.js';
 
 const embeddings = new OllamaEmbeddings({
     model: CONFIG.EMBEDDING_MODEL, 
-    baseUrl: "http://localhost:11434" // Default Ollama port
+    baseUrl: CONFIG.OLLAMA_BASE_URL
 });
 
 let vectorStore = null;
 
 export async function initVectorStore() {
     try {
+        // We explicitly use the collection name from your config
         vectorStore = await Chroma.fromExistingCollection(embeddings, {
             collectionName: CONFIG.COLLECTION_NAME,
             url: CONFIG.CHROMA_URL
         });
-        console.log("🔹 Connected to existing Vector Store.");
+        
+        // This check ensures the collection actually has data
+        const collection = await vectorStore.ensureCollection();
+        const count = await collection.count();
+        
+        if (count > 0) {
+            console.log(`🔹 Connected to existing Vector Store with ${count} chunks.`);
+        } else {
+            console.log("🔸 Collection exists but is currently empty.");
+        }
     } catch (e) {
-        console.log("🔸 No existing collection found. Will create new one on ingestion.");
+        console.log("🔸 No existing collection found or could not connect.");
+        vectorStore = null; 
     }
 }
 
 export async function addDocumentsToVectorDB(chunks) {
     if (chunks.length === 0) return;
 
-    // Create new store or add to existing
+    // This creates the collection if it doesn't exist AND adds documents
     vectorStore = await Chroma.fromDocuments(chunks, embeddings, {
         collectionName: CONFIG.COLLECTION_NAME,
         url: CONFIG.CHROMA_URL
     });
     
-    console.log("✅ Vector DB updated with new documents.");
+    console.log("✅ Vector DB updated and persisted.");
 }
 
-export async function searchVectorDB(query, k = 3) {
+export async function searchVectorDB(query, k = 4) { // Increased default k
     if (!vectorStore) {
         await initVectorStore();
     }
+    
     if (!vectorStore) {
-        console.log("⚠️ Vector store not ready.");
+        console.log("⚠️ Vector store not ready (No data ingested yet).");
         return [];
     }
     
-    // Returns results
     return await vectorStore.similaritySearchWithScore(query, k);
 }
