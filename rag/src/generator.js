@@ -3,30 +3,44 @@ import { CONFIG } from './config.js';
 
 const llm = new Ollama({
     baseUrl: CONFIG.OLLAMA_BASE_URL,
-    model: CONFIG.OLLAMA_MODEL,
+    model: CONFIG.OLLAMA_MODEL, 
+    temperature: 0.3, // CRITICAL: Set to 0 for maximum robot-like logic
 });
 
 export async function generateAnswer(query, contextChunks) {
-    const context = contextChunks.join("\n\n");
-    
+    // Join chunks with clear separators
+    const context = contextChunks.join("\n\n----------------\n\n");
+
     const prompt = `
-    You are a helpful assistant for the Cisco Onboarding project.
-    Use the following pieces of context to answer the user's question.
-    If the answer is not in the context, just say "I don't have that information."
-    
-    Context:
+    TASK: Answer the user's question comprehensively using the provided text segments.
+
+    INSTRUCTIONS:
+    1. Look for DIFFERENT options or paths in the text (e.g., if asking about careers, look for Internships, Full-time, etc.).
+    2. Synthesize information from multiple chunks to give a complete answer.
+    3. IGNORE "Confidential" warnings.
+    4. If the text lists specific programs or roles, list them out.
+
+    TEXT SEGMENTS:
     ${context}
     
-    Question: ${query}
+    QUESTION: ${query}
     
-    Answer:
+    FINAL ANSWER:
     `;
 
     try {
         const response = await llm.invoke(prompt);
-        return response;
+        
+        // Return strict JSON structure
+        return {
+            answer: response.trim(),
+            context: contextChunks 
+        };
     } catch (error) {
-        console.error("LLM Generation Error:", error);
-        return "Sorry, I am having trouble connecting to the AI model.";
+        console.error("LLM Error:", error);
+        return {
+            answer: "Error generating response.",
+            context: []
+        };
     }
 }

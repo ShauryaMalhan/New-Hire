@@ -8,6 +8,6 @@ export const CONFIG = {
     CHROMA_URL: process.env.CHROMA_URL,
     DATA_DIR: process.env.DATA_DIR,
     COLLECTION_NAME: process.env.COLLECTION_NAME,
-    CHUNK_SIZE: 1000,
-    CHUNK_OVERLAP: 200
+    CHUNK_SIZE: 600,
+    CHUNK_OVERLAP: 150
 };

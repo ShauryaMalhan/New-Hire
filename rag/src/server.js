@@ -5,74 +5,117 @@ import fs from 'fs';
 import path from 'path';
 import { CONFIG } from './config.js';
 import { loadAndChunkFiles } from './ingestion.js';
-import { addDocumentsToVectorDB, searchVectorDB, initVectorStore } from './vectorStore.js';
+import { addDocumentsToVectorDB, searchVectorDB, initVectorStore, resetVectorDB } from './vectorStore.js';
 import { buildKeywordIndex, searchKeywordDB } from './keywordStore.js';
 import { generateAnswer } from './generator.js';
 
 const app = express();
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: 'uploads/' }); // Temp storage for files
 
 app.use(cors());
 app.use(express.json());
 
-// Initialize systems
 console.log("🚀 Starting RAG Server...");
 await initVectorStore();
 
-// --- 1. Query Endpoint ---
+// --- 1. Query Endpoint (Unchanged) ---
 app.post('/query', async (req, res) => {
     const { question } = req.body;
-    
-    console.log(`\n🔎 New Query: "${question}"`);
+    console.log(`\n🔎 Query: "${question}"`);
 
-    // A. Vector Search
-    const vectorResults = await searchVectorDB(question, 3);
-    const vectorTexts = vectorResults.map(res => res[0].pageContent);
-    
-    // B. Keyword Search
-    const keywordTexts = searchKeywordDB(question, 3);
-    
-    // C. Combine & Deduplicate
+    // Fetch 10 chunks to ensure we get broad context
+    const vectorResults = await searchVectorDB(question, 10);
+    const vectorTexts = vectorResults.map(([doc, score]) => {
+        const source = doc.metadata?.source || "Unknown";
+        return `[Source: ${source}]\n${doc.pageContent}`;
+    });
+
+    const keywordResults = searchKeywordDB(question, 5);
+    const keywordTexts = keywordResults.map(res => 
+        typeof res === 'string' ? res : `[Source: Keyword]\n${res.pageContent || res}`
+    );
+
     const allContexts = [...new Set([...vectorTexts, ...keywordTexts])];
-    
-    console.log(`Found ${allContexts.length} relevant chunks.`);
+    console.log(`✅ Context: ${allContexts.length} chunks.`);
 
-    // D. Generate Answer
-    const answer = await generateAnswer(question, allContexts);
-    
-    res.json({ answer, context: allContexts });
+    const response = await generateAnswer(question, allContexts);
+    res.json(response);
 });
 
-// --- 2. Admin Ingest Endpoint ---
-app.post('/admin/ingest', upload.single('file'), async (req, res) => {
-    const { text } = req.body;
-    const file = req.file;
-
+// --- 2. UPDATED: Upload Endpoint (Files OR Text) ---
+// This handles saving data to disk. It does NOT touch the DB yet.
+app.post('/admin/upload', upload.single('file'), (req, res) => {
+    const { text } = req.body; // Check for raw text input
+    const file = req.file;     // Check for file input
+    
+    // Ensure data directory exists
     if (!fs.existsSync(CONFIG.DATA_DIR)) {
-        fs.mkdirSync(CONFIG.DATA_DIR);
+        fs.mkdirSync(CONFIG.DATA_DIR, { recursive: true });
     }
 
     if (file) {
-        // Move uploaded file to data folder
+        // CASE A: User uploaded a file (PDF, TXT, etc.)
         const targetPath = path.join(CONFIG.DATA_DIR, file.originalname);
+        
+        // Remove existing file with same name if it exists
+        if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
+        
         fs.renameSync(file.path, targetPath);
-        console.log(`📄 Saved file: ${file.originalname}`);
-    } else if (text) {
-        // Save text input as a .txt file
-        const textPath = path.join(CONFIG.DATA_DIR, `admin_fix_${Date.now()}.txt`);
-        fs.writeFileSync(textPath, text);
-        console.log(`📝 Saved text input.`);
-    }
+        console.log(`📄 File stored: ${file.originalname}`);
+        
+        res.json({ 
+            status: "success", 
+            message: `File '${file.originalname}' saved. Go to /admin/reindex to apply changes.` 
+        });
 
-    // Re-process everything (Simple "Fresh" Ingest)
+    } else if (text) {
+        // CASE B: User pasted raw text (e.g., "The secret code is RedFalcon")
+        // We save this as a new text file automatically.
+        const filename = `manual_entry_${Date.now()}.txt`;
+        const textPath = path.join(CONFIG.DATA_DIR, filename);
+        
+        fs.writeFileSync(textPath, text);
+        console.log(`📝 Text input saved to: ${filename}`);
+        
+        res.json({ 
+            status: "success", 
+            message: `Text saved as '${filename}'. Go to /admin/reindex to apply changes.` 
+        });
+
+    } else {
+        res.status(400).json({ error: "No file or text provided." });
+    }
+});
+
+// --- 3. Re-Index Endpoint (The "Hard Reset") ---
+// This deletes the DB and re-ingests EVERYTHING in the data folder.
+app.post('/admin/reindex', async (req, res) => {
     try {
+        console.log("\n🔄 STARTING FULL RE-INDEXING...");
+        
+        // 1. Wipe the Database
+        await resetVectorDB();
+        
+        // 2. Read ALL files (PDFs + the new manual_entry.txt files)
         const chunks = await loadAndChunkFiles();
+        
+        if (chunks.length === 0) {
+            return res.json({ message: "Data folder is empty. DB cleared." });
+        }
+
+        // 3. Ingest everything fresh
         await addDocumentsToVectorDB(chunks);
         buildKeywordIndex(chunks);
-        res.json({ status: "success", message: "Knowledge base updated!" });
+        
+        console.log(`✅ RE-INDEX COMPLETE: ${chunks.length} documents processed.`);
+        
+        res.json({ 
+            status: "success", 
+            message: `Index rebuilt with ${chunks.length} chunks.` 
+        });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ status: "error", message: err.message });
+        console.error("❌ Reindexing Failed:", err);
+        res.status(500).json({ error: err.message });
     }
 });
 
