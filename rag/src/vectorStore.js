@@ -1,7 +1,6 @@
-// src/vectorStore.js
 import { Chroma } from "@langchain/community/vectorstores/chroma";
 import { OllamaEmbeddings } from "@langchain/ollama";
-import { ChromaClient } from 'chromadb'; // 📦 NEW IMPORT
+import { ChromaClient } from 'chromadb';
 import { CONFIG } from './config.js';
 
 const embeddings = new OllamaEmbeddings({
@@ -11,33 +10,28 @@ const embeddings = new OllamaEmbeddings({
 
 let vectorStore = null;
 
-// Initialize connection (Same as before)
+// --- 1. Initialize Connection ---
 export async function initVectorStore() {
     try {
         vectorStore = await Chroma.fromExistingCollection(embeddings, {
             collectionName: CONFIG.COLLECTION_NAME,
             url: CONFIG.CHROMA_URL
         });
-        const collection = await vectorStore.ensureCollection();
+        await vectorStore.ensureCollection();
         console.log(`🔹 Connected to collection: "${CONFIG.COLLECTION_NAME}"`);
     } catch (e) {
-        console.log("🔸 Initializing new collection connection...");
+        console.log("🔸 Collection not found (will be created on ingest).");
         vectorStore = null;
     }
 }
 
-// 🧨 NEW FUNCTION: Wipes the DB Clean
+// --- 2. Hard Reset (Wipe DB) ---
 export async function resetVectorDB() {
     console.log("🧨 RESET TRIGGERED: Deleting existing collection...");
     try {
-        // We use the raw client to perform administrative delete
         const client = new ChromaClient({ path: CONFIG.CHROMA_URL });
-        
-        // Try to delete the collection
         await client.deleteCollection({ name: CONFIG.COLLECTION_NAME });
         console.log("🗑️  Collection deleted successfully.");
-        
-        // Reset our local variable
         vectorStore = null;
         return true;
     } catch (e) {
@@ -46,24 +40,40 @@ export async function resetVectorDB() {
     }
 }
 
-// Add documents (Same as before)
+// --- 3. Add Documents (Ingest) ---
 export async function addDocumentsToVectorDB(chunks) {
     if (chunks.length === 0) return;
     
-    // Auto-create collection if it was just deleted
+    console.log(`🔄 Adding ${chunks.length} chunks to ChromaDB...`);
     vectorStore = await Chroma.fromDocuments(chunks, embeddings, {
         collectionName: CONFIG.COLLECTION_NAME,
         url: CONFIG.CHROMA_URL
     });
-    
-    console.log(`✅ Added ${chunks.length} chunks to the database.`);
+    console.log(`✅ Successfully stored ${chunks.length} chunks.`);
 }
 
-// Search (Same as before)
+// --- 4. Search (Standard & Reliable) ---
 export async function searchVectorDB(query, k = 10) { 
     if (!vectorStore) await initVectorStore();
-    if (!vectorStore) return [];
     
-    // Hardcoded 10 to ensure retrieval depth
-    return await vectorStore.similaritySearchWithScore(query, 10);
+    if (!vectorStore) {
+        console.log("⚠️ Vector store not ready (No data ingested).");
+        return [];
+    }
+    
+    console.log(`🧠 Asking Chroma for top ${k} results...`);
+    
+    try {
+        // We stick to the standard search because it is 100% reliable in JS
+        const results = await vectorStore.similaritySearchWithScore(query, k);
+        
+        console.log(`📦 Chroma returned ${results.length} chunks.`);
+        
+        // Return raw results (Server.js handles the formatting)
+        return results;
+        
+    } catch (error) {
+        console.error("❌ Chroma Search Error:", error);
+        return [];
+    }
 }

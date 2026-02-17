@@ -4,7 +4,7 @@ import { CONFIG } from './config.js';
 const llm = new Ollama({
     baseUrl: CONFIG.OLLAMA_BASE_URL,
     model: CONFIG.OLLAMA_MODEL, 
-    temperature: 0.3, // CRITICAL: Set to 0 for maximum robot-like logic
+    temperature: 0.3,
 });
 
 export async function generateAnswer(query, contextChunks) {

@@ -4,45 +4,55 @@ import { PDFLoader } from "@langchain/community/document_loaders/fs/pdf";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import { CONFIG } from './config.js';
 
+// 🧹 Helper: Cleans noise from PDF text
+function cleanText(text) {
+    return text
+        .replace(/\s+/g, ' ') // Collapse multiple spaces/newlines into one single space
+        .replace(/\.{3,}/g, '') // Remove dots "......" often found in Tables of Contents
+        .trim();
+}
+
 export async function loadAndChunkFiles() {
     const documents = [];
     
     // Ensure data directory exists
     if (!fs.existsSync(CONFIG.DATA_DIR)) {
-        fs.mkdirSync(CONFIG.DATA_DIR);
+        fs.mkdirSync(CONFIG.DATA_DIR, { recursive: true });
     }
 
     const files = fs.readdirSync(CONFIG.DATA_DIR);
-    console.log(`📂 Found files: ${files}`);
+    console.log(`📂 Found files: ${files.length}`);
 
     for (const file of files) {
         const filePath = path.join(CONFIG.DATA_DIR, file);
         
         try {
             if (file.endsWith('.pdf')) {
-                console.log(`Processing PDF: ${file}`);
-                const loader = new PDFLoader(filePath);
+                console.log(`📄 Processing PDF: ${file}`);
+                const loader = new PDFLoader(filePath, {
+                    splitPages: false // Load entire PDF as one text first to handle cross-page sentences
+                });
                 const docs = await loader.load();
 
+                // Clean the text and attach simple metadata
                 docs.forEach(doc => {
-                    if (doc.metadata && doc.metadata.pdf) {
-                        delete doc.metadata.pdf; 
-                    }
+                    doc.pageContent = cleanText(doc.pageContent);
+                    doc.metadata = { source: file }; // Overwrite complex PDF metadata with simple filename
                 });
-                // -----------------------------
 
                 documents.push(...docs);
+
             } else if (file.endsWith('.txt')) {
-                console.log(`Processing TXT: ${file}`);
+                console.log(`📝 Processing TXT: ${file}`);
                 const text = fs.readFileSync(filePath, 'utf-8');
-                // TXT files are simple, but let's give them a clean metadata object too
+                
                 documents.push({ 
-                    pageContent: text, 
+                    pageContent: cleanText(text), 
                     metadata: { source: file } 
                 });
             }
         } catch (err) {
-            console.error(`Error reading file ${file}:`, err);
+            console.error(`❌ Error reading file ${file}:`, err);
         }
     }
 
@@ -51,12 +61,15 @@ export async function loadAndChunkFiles() {
         return [];
     }
 
+    // 🧠 SMART CHUNKING STRATEGY
+    // We prioritize splitting by Paragraphs (\n\n), then Sentences (.), then Words.
     const splitter = new RecursiveCharacterTextSplitter({
-        chunkSize: CONFIG.CHUNK_SIZE,
-        chunkOverlap: CONFIG.CHUNK_OVERLAP,
+        chunkSize: CONFIG.CHUNK_SIZE,       // Recommendation: 800 - 1000 chars
+        chunkOverlap: CONFIG.CHUNK_OVERLAP, // Recommendation: 100 - 200 chars
+        separators: ["\n\n", "\n", ". ", "? ", "! ", " ", ""] 
     });
 
-    const chunks = await splitter.splitDocuments(documents); // Now safe to split!
-    console.log(`✅ Chunking complete. Created ${chunks.length} chunks.`);
+    const chunks = await splitter.splitDocuments(documents);
+    console.log(`✅ Chunking complete. Created ${chunks.length} smart chunks.`);
     return chunks;
 }
