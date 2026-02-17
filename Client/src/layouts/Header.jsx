@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, Link, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BookOpen, Settings, User, LogOut, ChevronDown, Hexagon } from 'lucide-react';
+// 1. Import MessageSquare icon for the chat page
+import { LayoutDashboard, BookOpen, Settings, User, LogOut, ChevronDown, Hexagon, MessageSquare } from 'lucide-react';
 import useAuth from '../hooks/useAuth';
 import styles from '../stylesheets/Header.module.css';
 
@@ -8,11 +9,9 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   
-  // Get user data and logout function from Context
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
-  // Close dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -55,6 +54,12 @@ const Header = () => {
           <span>Required Trainings</span>
         </NavLink>
 
+        {/* --- NEW LINK: Ask AI --- */}
+        <NavLink to="/ask" className={({isActive}) => `${styles.navLink} ${isActive ? styles.active : ''}`}>
+          <MessageSquare size={18} />
+          <span>Ask AI</span>
+        </NavLink>
+
         <NavLink to="/setup" className={({isActive}) => `${styles.navLink} ${isActive ? styles.active : ''}`}>
           <Settings size={18} />
           <span>Setup Guides</span>
@@ -63,7 +68,6 @@ const Header = () => {
 
       {/* 3. User Profile & Dropdown */}
       <div className={styles.userContainer} ref={dropdownRef}>
-        {/* Profile Trigger */}
         <div className={styles.userProfile} onClick={() => setIsOpen(!isOpen)}>
           <div className={styles.userInfo}>
             <span className={styles.userName}>{fullName}</span>
@@ -73,7 +77,6 @@ const Header = () => {
           <ChevronDown size={16} className={styles.chevron} />
         </div>
 
-        {/* Dropdown Menu - Controlled by CSS class 'show' */}
         <div className={`${styles.dropdown} ${isOpen ? styles.show : ''}`}>
           <Link to="/profile" className={styles.dropdownItem} onClick={() => setIsOpen(false)}>
             <User size={16} /> 

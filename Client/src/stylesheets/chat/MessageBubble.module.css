@@ -1,0 +1,82 @@
+.container {
+  display: flex;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.container.user {
+  justify-content: flex-end;
+}
+
+.container.bot {
+  justify-content: flex-start;
+}
+
+.wrapper {
+  display: flex;
+  max-width: 80%;
+  gap: 0.75rem;
+}
+
+.container.user .wrapper {
+  flex-direction: row-reverse;
+}
+
+.avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.avatar.user {
+  background-color: #2563eb; /* Blue */
+}
+
+.avatar.bot {
+  background-color: #10b981; /* Emerald */
+}
+
+.contentCol {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0; /* Prevents overflow */
+}
+
+.bubble {
+  padding: 1rem 1.25rem;
+  border-radius: 1rem;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  word-wrap: break-word;
+}
+
+.bubble.user {
+  background-color: #2563eb;
+  color: white;
+  border-top-right-radius: 0;
+}
+
+.bubble.bot {
+  background-color: white;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+  border-top-left-radius: 0;
+}
+
+/* Markdown Styling within Bot Bubbles */
+.bubble.bot ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.bubble.bot strong {
+  color: #1e293b;
+  font-weight: 700;
+}

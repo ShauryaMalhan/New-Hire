@@ -7,17 +7,15 @@ import UserProfile from './pages/UserProfile';
 import Login from './pages/Login';
 import AuthProvider from './providers/AuthProvider';
 import ProtectedRoute from './components/ProtectedRoute';
+import AskQuestion from './pages/AskQuestion';
 
 function App() {
   return (
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={
-          <ProtectedRoute>
-            <MainLayout />
-          </ProtectedRoute>
-        }>
+        <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+          <Route path="/ask" element={<AskQuestion />} />
           <Route index element={<Dashboard />} />
           <Route path="learning" element={<RequiredTrainings />} />
           <Route path="profile" element={<UserProfile />} />
