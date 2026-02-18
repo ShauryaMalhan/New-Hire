@@ -1,70 +1,53 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from "react";
+import axios from "axios";
 
-export function useChat() {
+export const useChat = () => {
   const [messages, setMessages] = useState([
     { 
-      id: 1, 
-      type: 'bot', 
-      text: 'Hello! I am your NexBoard AI assistant. Ask me anything about our onboarding policies or hiring paths.', 
-      sources: [] 
+      text: "Hello! I am NexBoard. Ask me anything about our internal documents.", 
+      sender: "bot" 
     }
   ]);
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
-  // Auto-scroll logic
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // POINT THIS TO YOUR LOCAL RAG SERVER
+  const RAG_API_URL = "http://localhost:3000/query";
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
-
-  const sendMessage = async (text) => {
-    if (!text.trim()) return;
+  const askQuestion = async (question) => {
+    if (!question.trim()) return;
 
     // 1. Add User Message immediately
-    const userMsg = { id: Date.now(), type: 'user', text };
-    setMessages((prev) => [...prev, userMsg]);
-    setIsLoading(true);
+    const newUserMsg = { text: question, sender: "user" };
+    setMessages((prev) => [...prev, newUserMsg]);
+    setLoading(true);
 
     try {
-      // 2. Call your RAG Backend (Ensure your RAG server is running on port 3000)
-      const response = await fetch('http://localhost:3000/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: text }),
+      // 2. Send to Backend
+      const response = await axios.post(RAG_API_URL, {
+        question: question
       });
-      
-      if (!response.ok) throw new Error('Network response was not ok');
 
-      const data = await response.json();
+      const { answer, sources } = response.data;
 
-      // 3. Add Bot Message
-      const botMsg = {
-        id: Date.now() + 1,
-        type: 'bot',
-        text: data.answer,
-        sources: data.context || [] 
+      // 3. Add Bot Response
+      const botResponse = {
+        text: answer,
+        sender: "bot",
+        sources: sources || []
       };
-      setMessages((prev) => [...prev, botMsg]);
-      
+
+      setMessages((prev) => [...prev, botResponse]);
+
     } catch (error) {
-      console.error("Chat Error:", error);
+      console.error("RAG Error:", error);
       setMessages((prev) => [
-        ...prev, 
-        { id: Date.now(), type: 'bot', text: '⚠️ Connection error. Please ensure the RAG server is running.' }
+        ...prev,
+        { text: "⚠️ Error: Could not reach NexBoard Knowledge Base.", sender: "bot" }
       ]);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  return { 
-    messages, 
-    isLoading, 
-    sendMessage, 
-    messagesEndRef 
-  };
-}
+  return { messages, loading, askQuestion };
+};

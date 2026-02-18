@@ -9,8 +9,12 @@ import { addDocumentsToVectorDB, searchVectorDB, initVectorStore, resetVectorDB 
 import { buildKeywordIndex, searchKeywordDB } from './keywordStore.js';
 import { generateAnswer } from './generator.js';
 
+// --- NEW IMPORT: Session Database Logic ---
+// We now import session-based functions instead of simple saveMessage
+import { createSession, getUserSessions, getSessionMessages, saveMessage } from './db.js'; 
+
 const app = express();
-const upload = multer({ dest: 'uploads/' }); // Temp storage for files
+const upload = multer({ dest: 'uploads/' }); 
 
 app.use(cors());
 app.use(express.json());
@@ -18,65 +22,107 @@ app.use(express.json());
 console.log("🚀 Starting RAG Server...");
 await initVectorStore();
 
-// --- 1. Query Endpoint (Unchanged) ---
-app.post('/query', async (req, res) => {
-    const { question } = req.body;
-    console.log(`\n🔎 Query: "${question}"`);
-
-    // Fetch 10 chunks to ensure we get broad context
-    const vectorResults = await searchVectorDB(question, 10);
-    const vectorTexts = vectorResults.map(([doc, score]) => {
-        const source = doc.metadata?.source || "Unknown";
-        return `[Source: ${source}]\n${doc.pageContent}`;
-    });
-
-    const keywordResults = searchKeywordDB(question, 5);
-    const keywordTexts = keywordResults.map(res => 
-        typeof res === 'string' ? res : `[Source: Keyword]\n${res.pageContent || res}`
-    );
-
-    const allContexts = [...new Set([...vectorTexts, ...keywordTexts])];
-    console.log(`✅ Context: ${allContexts.length} chunks.`);
-
-    const response = await generateAnswer(question, allContexts);
-    res.json(response);
+// --- 1. NEW: Get All Sessions (Sidebar List) ---
+app.get('/sessions/:ciscoId', async (req, res) => {
+    try {
+        const sessions = await getUserSessions(req.params.ciscoId);
+        res.json({ sessions });
+    } catch (err) {
+        console.error("Sidebar Error:", err);
+        res.status(500).json({ error: "Failed to fetch sessions" });
+    }
 });
 
-// --- 2. UPDATED: Upload Endpoint (Files OR Text) ---
-// This handles saving data to disk. It does NOT touch the DB yet.
+// --- 2. NEW: Get Messages for ONE Session (Main Chat Window) ---
+app.get('/session/:sessionId', async (req, res) => {
+    try {
+        const history = await getSessionMessages(req.params.sessionId);
+        res.json({ history });
+    } catch (err) {
+        console.error("Chat Load Error:", err);
+        res.status(500).json({ error: "Failed to fetch messages" });
+    }
+});
+
+// --- 3. UPDATED: Query Endpoint (Handles Session Creation) ---
+app.post('/query', async (req, res) => {
+    // Now accepts sessionId (optional)
+    let { question, ciscoId, sessionId } = req.body; 
+    console.log(`\n🔎 Query: "${question}" (User: ${ciscoId}, Session: ${sessionId || 'New'})`);
+
+    try {
+        // A. If no Session ID, Create a NEW Session (Thread)
+        if (!sessionId && ciscoId) {
+            sessionId = await createSession(ciscoId, question);
+            console.log(`✨ Created New Session: ${sessionId}`);
+        }
+
+        // B. Save User Question to DB
+        if (sessionId) {
+            await saveMessage(sessionId, 'user', question);
+        }
+
+        // C. Perform RAG Search (Existing Logic)
+        const vectorResults = await searchVectorDB(question, 10);
+        const vectorTexts = vectorResults.map(([doc, score]) => {
+            const source = doc.metadata?.source || "Unknown";
+            return `[Source: ${source}]\n${doc.pageContent}`;
+        });
+
+        const keywordResults = searchKeywordDB(question, 5);
+        const keywordTexts = keywordResults.map(res => 
+            typeof res === 'string' ? res : `[Source: Keyword]\n${res.pageContent || res}`
+        );
+
+        const allContexts = [...new Set([...vectorTexts, ...keywordTexts])];
+        console.log(`✅ Context: ${allContexts.length} chunks.`);
+
+        // D. Generate Answer
+        const response = await generateAnswer(question, allContexts);
+        // Response is { answer: "...", sources: [...] }
+
+        // E. Save Bot Answer to DB
+        if (sessionId) {
+            await saveMessage(sessionId, 'bot', response.answer, response.sources);
+        }
+
+        // F. Return Answer AND the Session ID
+        // The frontend needs the sessionId to switch the URL/State to the active chat
+        res.json({ 
+            ...response, 
+            sessionId 
+        });
+
+    } catch (error) {
+        console.error("Query Failed:", error);
+        res.status(500).json({ error: "RAG Pipeline Failed" });
+    }
+});
+
+// --- 4. Upload Endpoint (Unchanged) ---
 app.post('/admin/upload', upload.single('file'), (req, res) => {
-    const { text } = req.body; // Check for raw text input
-    const file = req.file;     // Check for file input
+    const { text } = req.body; 
+    const file = req.file;     
     
-    // Ensure data directory exists
     if (!fs.existsSync(CONFIG.DATA_DIR)) {
         fs.mkdirSync(CONFIG.DATA_DIR, { recursive: true });
     }
 
     if (file) {
-        // CASE A: User uploaded a file (PDF, TXT, etc.)
         const targetPath = path.join(CONFIG.DATA_DIR, file.originalname);
-        
-        // Remove existing file with same name if it exists
         if (fs.existsSync(targetPath)) fs.unlinkSync(targetPath);
-        
         fs.renameSync(file.path, targetPath);
         console.log(`📄 File stored: ${file.originalname}`);
-        
         res.json({ 
             status: "success", 
             message: `File '${file.originalname}' saved. Go to /admin/reindex to apply changes.` 
         });
 
     } else if (text) {
-        // CASE B: User pasted raw text (e.g., "The secret code is RedFalcon")
-        // We save this as a new text file automatically.
         const filename = `manual_entry_${Date.now()}.txt`;
         const textPath = path.join(CONFIG.DATA_DIR, filename);
-        
         fs.writeFileSync(textPath, text);
         console.log(`📝 Text input saved to: ${filename}`);
-        
         res.json({ 
             status: "success", 
             message: `Text saved as '${filename}'. Go to /admin/reindex to apply changes.` 
@@ -87,28 +133,21 @@ app.post('/admin/upload', upload.single('file'), (req, res) => {
     }
 });
 
-// --- 3. Re-Index Endpoint (The "Hard Reset") ---
-// This deletes the DB and re-ingests EVERYTHING in the data folder.
+// --- 5. Re-Index Endpoint (Unchanged) ---
 app.post('/admin/reindex', async (req, res) => {
     try {
         console.log("\n🔄 STARTING FULL RE-INDEXING...");
-        
-        // 1. Wipe the Database
         await resetVectorDB();
-        
-        // 2. Read ALL files (PDFs + the new manual_entry.txt files)
         const chunks = await loadAndChunkFiles();
         
         if (chunks.length === 0) {
             return res.json({ message: "Data folder is empty. DB cleared." });
         }
 
-        // 3. Ingest everything fresh
         await addDocumentsToVectorDB(chunks);
         buildKeywordIndex(chunks);
         
-        console.log(`✅ RE-INDEX COMPLETE: ${chunks.length} documents processed.`);
-        
+        console.log(`✅ RE-INDEX COMPLETE: ${chunks.length} chunks.`);
         res.json({ 
             status: "success", 
             message: `Index rebuilt with ${chunks.length} chunks.` 

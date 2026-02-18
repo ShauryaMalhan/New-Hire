@@ -1,7 +1,24 @@
+/* --- STRUCTURAL LAYOUT --- */
+.viewport {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Fill the screen */
+  width: 100%;
+  overflow: hidden; /* Lock the browser window */
+  background-color: #f9fafb;
+}
+
+.mainContent {
+  flex: 1;
+  overflow-y: auto; /* Internal scrolling for courses */
+  padding: 2rem 1rem;
+}
+
+/* --- PAGE CONTENT --- */
 .container {
-  max-width: 80rem; /* max-w-7xl */
+  max-width: 80rem;
   margin: 0 auto;
-  padding: 1rem;
+  width: 100%;
 }
 
 .header {
@@ -18,19 +35,19 @@
 }
 
 .icon {
-  color: #2563eb; /* text-blue-600 */
+  color: #2563eb;
 }
 
 .title {
-  font-size: 1.875rem; /* text-3xl */
+  font-size: 1.875rem;
   font-weight: 700;
-  color: #111827; /* text-gray-900 */
+  color: #111827;
   margin: 0;
 }
 
 .subtitle {
-  color: #6b7280; /* text-gray-500 */
-  font-size: 1.125rem; /* text-lg */
+  color: #6b7280;
+  font-size: 1.125rem;
   margin-top: 0.5rem;
 }
 

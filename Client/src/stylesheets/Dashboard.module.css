@@ -1,3 +1,27 @@
+/* --- STRUCTURAL LAYOUT --- */
+.viewport {
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* Exactly fill the screen height */
+  width: 100%;
+  overflow: hidden; /* Prevent browser window from scrolling */
+  background-color: #f9fafb;
+}
+
+.mainContent {
+  flex: 1; /* Grow to fill space below header */
+  min-height: 0;
+  overflow-y: auto; /* Only this area scrolls if content is long */
+  padding: 2rem 1rem;
+}
+
+.container {
+  max-width: 56rem; /* Equivalent to max-w-4xl */
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* --- DASHBOARD COMPONENTS --- */
 .hero {
   background: linear-gradient(to right, #2563eb, #4338ca);
   border-radius: 1rem;
@@ -8,7 +32,6 @@
   overflow: hidden;
 }
 
-/* We removed the 2-column grid. Now it's just a single column flow. */
 .workflowSection {
   background-color: white;
   padding: 2rem;
@@ -26,7 +49,9 @@
   color: #1f2937;
 }
 
-.workflowContainer { position: relative; }
+.workflowContainer { 
+  position: relative; 
+}
 
 .workflowLine {
   position: absolute;
